@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node server.mjs",
-    "build": "next build",
+    "dev": "npm run build:css && node server.mjs",
+    "build:css": "tailwindcss -c ./tailwind.config.ts -i ./src/app/globals.css -o ./public/tailwind.generated.css --minify",
+    "build": "npm run build:css && next build",
     "start": "NODE_ENV=production node server.mjs",
     "lint": "next lint"
   },

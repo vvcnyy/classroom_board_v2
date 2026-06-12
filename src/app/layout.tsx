@@ -14,6 +14,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/* Static CSS fallback for electronic boards that miss Next's bundled CSS. */}
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
+        <link rel="stylesheet" href="/tailwind.generated.css" />
+      </head>
       <body>{children}</body>
     </html>
   );
