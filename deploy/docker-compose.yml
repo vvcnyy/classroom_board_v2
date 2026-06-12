@@ -1,0 +1,16 @@
+services:
+  dimi-board:
+    image: ghcr.io/vvcnyy/classroom_board_v2:latest
+    container_name: dimi-board
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9697:3000"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      MONGODB_URI: ${MONGODB_URI}
+      MONGODB_DB: ${MONGODB_DB}
+      CRON_SECRET: ${CRON_SECRET}
+      REGISTRATION_SECRET: ${REGISTRATION_SECRET}
+      SOCKET_IO_CORS_ORIGIN: ${SOCKET_IO_CORS_ORIGIN}
