@@ -8,18 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { RESERVATION_DAYS, RESERVATION_TIME_OPTIONS } from "@/lib/constants/reservations";
 import { STORAGE_KEYS } from "@/lib/constants/storage";
 import type { LocationSection } from "@/types/domain";
-
-const days = [
-  ["0", "일"],
-  ["1", "월"],
-  ["2", "화"],
-  ["3", "수"],
-  ["4", "목"],
-  ["5", "금"],
-  ["6", "토"],
-];
 
 function BookPage() {
   const [studentId, setStudentId] = useState("");
@@ -111,13 +102,18 @@ function BookPage() {
           <CardContent className="space-y-4">
             <Input placeholder="제목" value={title} onChange={(event) => setTitle(event.target.value)} />
             <div className="grid grid-cols-7 gap-1">
-              {days.map(([value, label]) => (
+              {RESERVATION_DAYS.map(([value, label]) => (
                 <Button key={value} type="button" variant={date.includes(value) ? "default" : "secondary"} size="sm" onClick={() => toggleDay(value)}>
                   {label}
                 </Button>
               ))}
             </div>
-            <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} />
+            <Select value={time} onChange={(event) => setTime(event.target.value)}>
+              <option value="">시간 선택</option>
+              {RESERVATION_TIME_OPTIONS.map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
+            </Select>
             <Select value={place} onChange={(event) => {
               setPlace(event.target.value);
               if (!sections.find((section) => section.key === event.target.value)?.isETC) setEtcContent("");

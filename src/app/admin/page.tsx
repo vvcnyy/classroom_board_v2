@@ -31,6 +31,7 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { RESERVATION_DAYS, formatReservationDate } from "@/lib/constants/reservations";
 import { cn } from "@/lib/utils/cn";
 
 type AdminDocument = Record<string, unknown> & { _id?: string };
@@ -47,7 +48,6 @@ interface AdminResponse {
 }
 
 const iconMap = { Activity, BookOpen, CalendarDays, ClipboardList, Eye, LayoutList, School, Users };
-const days = [["0", "일"], ["1", "월"], ["2", "화"], ["3", "수"], ["4", "목"], ["5", "금"], ["6", "토"]];
 const readMostly = new Set(["access_log", "logs"]);
 const navCollections = ADMIN_COLLECTIONS.filter((item) => item.visibleInNav !== false);
 
@@ -363,6 +363,9 @@ export default function AdminPage() {
     if (field === "location" || field === "place") {
       return <span>{labelForSection(item, stringifyValue(value))}</span>;
     }
+    if (collection.key === "book" && field === "date") {
+      return <span>{formatReservationDate(value)}</span>;
+    }
     if (field === "visible" && Array.isArray(value)) {
       return renderBadges(value.map(String), item);
     }
@@ -547,7 +550,7 @@ export default function AdminPage() {
         <div className="space-y-2">
           <Label>반복 요일</Label>
           <div className="grid grid-cols-7 gap-1">
-            {days.map(([value, label]) => (
+            {RESERVATION_DAYS.map(([value, label]) => (
               <Button key={value} type="button" variant={selectedDays.includes(value) ? "default" : "secondary"} size="sm" onClick={() => toggleDay(value)}>
                 {label}
               </Button>

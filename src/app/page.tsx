@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { formatReservationDate } from "@/lib/constants/reservations";
 import { STORAGE_KEYS } from "@/lib/constants/storage";
 import type { LocationSection, Reservation, Student } from "@/types/domain";
 
@@ -227,7 +228,9 @@ function StudentApp() {
                   <div key={String(reservation._id)} className="flex items-center justify-between rounded-md border bg-muted/40 p-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{reservation.title || "예약"} {reservation.etcContent ? `(${reservation.etcContent})` : ""}</p>
-                      <p className="text-xs text-muted-foreground">{reservation.time} · {sections.find((s) => s.key === reservation.place)?.label ?? reservation.place}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatReservationDate(reservation.date)} · {reservation.time} · {sections.find((s) => s.key === reservation.place)?.label ?? reservation.place}
+                      </p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => deleteReservation(String(reservation._id))}>
                       <Trash2 className="h-4 w-4" />
