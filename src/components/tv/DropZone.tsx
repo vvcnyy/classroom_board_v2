@@ -26,7 +26,7 @@ export function DropZone({
     >
       <div className="mb-[0.65vw] flex items-center justify-between gap-[0.5vw]">
         <h2 className="truncate text-left text-[1.08vw] font-semibold text-zinc-50">{location.label}</h2>
-        <span className="shrink-0 rounded-[0.35vw] border border-white/10 bg-white/[0.06] px-[0.5vw] py-[0.15vw] text-[0.7vw] font-semibold text-zinc-300">
+        <span className="shrink-0 rounded-[0.35vw] px-[0.5vw] py-[0.15vw] text-[0.7vw] font-semibold text-zinc-300">
           {students.length}명
         </span>
       </div>
