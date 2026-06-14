@@ -47,6 +47,19 @@ interface AdminResponse {
   items: AdminDocument[];
 }
 
+interface AdminWriteResponse {
+  message?: string;
+  insertedId?: string;
+  document?: AdminDocument;
+}
+
+interface LoadItemsOptions {
+  page?: number;
+  query?: string;
+  scopeFilter?: string;
+  locationFilter?: string;
+}
+
 const iconMap = { Activity, BookOpen, CalendarDays, ClipboardList, Eye, LayoutList, School, Users };
 const readMostly = new Set(["access_log", "logs"]);
 const navCollections = ADMIN_COLLECTIONS.filter((item) => item.visibleInNav !== false);
@@ -117,6 +130,14 @@ function asDraft(value: string, fallback: AdminDocument = {}) {
   }
 }
 
+function parseDraftStrict(value: string) {
+  const parsed = JSON.parse(value || "{}");
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("문서는 JSON 객체여야 합니다.");
+  }
+  return parsed as AdminDocument;
+}
+
 export default function AdminPage() {
   const [collectionKey, setCollectionKey] = useState(ADMIN_COLLECTIONS[0].key);
   const [items, setItems] = useState<AdminDocument[]>([]);
@@ -163,8 +184,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (collection.key !== "class") return;
-    setClassSectionsDraft(relatedSectionDoc?.sections ?? []);
-    setClassVisibleDraft(relatedVisibleDoc?.visible ?? []);
+    setClassSectionsDraft(relatedSectionDoc?.sections ?? [classroomSection]);
+    setClassVisibleDraft(relatedVisibleDoc?.visible ?? [classroomSection.key]);
     setRelatedMessage("");
   }, [collection.key, relatedSectionDoc, relatedVisibleDoc, selectedId]);
 
@@ -201,20 +222,25 @@ export default function AdminPage() {
     }
   }
 
-  async function loadItems(nextQuery = query) {
+  async function loadItems(options: LoadItemsOptions = {}) {
+    const targetPage = options.page ?? page;
+    const targetQuery = options.query ?? query;
+    const targetScopeFilter = options.scopeFilter ?? scopeFilter;
+    const targetLocationFilter = options.locationFilter ?? locationFilter;
+
     setLoading(true);
     setMessage("");
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "50" });
-      if (nextQuery.trim()) params.set("q", nextQuery.trim());
-      if (scopeFilter) {
-        const scope = parseClassKey(scopeFilter);
+      const params = new URLSearchParams({ page: String(targetPage), limit: "50" });
+      if (targetQuery.trim()) params.set("q", targetQuery.trim());
+      if (targetScopeFilter) {
+        const scope = parseClassKey(targetScopeFilter);
         params.set("year", scope.year);
         params.set("grade", scope.grade);
         params.set(collection.key === "class" ? "classNum" : "class", scope.classNum);
       }
-      if (locationFilter) {
-        params.set(collection.key === "book" ? "place" : "location", locationFilter);
+      if (targetLocationFilter) {
+        params.set(collection.key === "book" ? "place" : "location", targetLocationFilter);
       }
 
       const response = await fetch(`/api/admin/${collection.key}?${params.toString()}`, { credentials: "include" });
@@ -223,6 +249,7 @@ export default function AdminPage() {
       const result = data as AdminResponse;
       setItems(result.items);
       setTotal(result.total);
+      setPage(result.page);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "요청을 처리하지 못했습니다.");
     } finally {
@@ -263,19 +290,23 @@ export default function AdminPage() {
     setSaving(true);
     setMessage("");
     try {
-      const document = asDraft(draft);
-      const isUpdate = Boolean(selected?._id);
+      const document = parseDraftStrict(draft);
+      const isUpdate = Boolean(selectedId);
       const response = await fetch(`/api/admin/${collection.key}`, {
         method: isUpdate ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(isUpdate ? { id: selected?._id, document } : document),
+        body: JSON.stringify(isUpdate ? { id: selectedId, document } : document),
       });
-      const data = (await response.json()) as { message?: string };
+      const data = (await response.json()) as AdminWriteResponse;
       if (!response.ok) throw new Error(data.message ?? "저장하지 못했습니다.");
       setMessage(isUpdate ? "문서를 수정했습니다." : "문서를 추가했습니다.");
-      await Promise.all([loadItems(), collection.key === "sections" || collection.key === "class" ? loadReferences() : Promise.resolve()]);
-      if (!isUpdate) startCreate();
+      if (data.document?._id) {
+        setSelectedId(data.document._id);
+        setDraft(prettyJson(data.document));
+      }
+      const nextPage = isUpdate ? page : 1;
+      await Promise.all([loadItems({ page: nextPage }), collection.key === "sections" || collection.key === "class" ? loadReferences() : Promise.resolve()]);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "JSON 형식을 확인해주세요.");
     } finally {
@@ -288,16 +319,17 @@ export default function AdminPage() {
       setMessage("로그 컬렉션은 삭제할 수 없습니다.");
       return;
     }
-    if (!selected?._id || !confirm("선택한 문서를 삭제할까요?")) return;
+    if (!selectedId || !confirm("선택한 문서를 삭제할까요?")) return;
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch(`/api/admin/${collection.key}?id=${selected._id}`, { method: "DELETE", credentials: "include" });
+      const response = await fetch(`/api/admin/${collection.key}?id=${selectedId}`, { method: "DELETE", credentials: "include" });
       const data = (await response.json()) as { message?: string };
       if (!response.ok) throw new Error(data.message ?? "삭제하지 못했습니다.");
       setMessage("문서를 삭제했습니다.");
+      const nextPage = items.length <= 1 && page > 1 ? page - 1 : page;
       startCreate();
-      await Promise.all([loadItems(), collection.key === "sections" || collection.key === "class" ? loadReferences() : Promise.resolve()]);
+      await Promise.all([loadItems({ page: nextPage }), collection.key === "sections" || collection.key === "class" ? loadReferences() : Promise.resolve()]);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "요청을 처리하지 못했습니다.");
     } finally {
@@ -329,7 +361,7 @@ export default function AdminPage() {
       });
       const data = (await response.json()) as { message?: string };
       if (!response.ok) throw new Error(data.message ?? "저장하지 못했습니다.");
-      await loadReferences();
+      await Promise.all([loadReferences(), collection.key === target ? loadItems() : Promise.resolve()]);
       setRelatedMessage(target === "sections" ? "섹션 구성을 저장했습니다." : "표시 섹션을 저장했습니다.");
     } catch (error) {
       setRelatedMessage(error instanceof Error ? error.message : "요청을 처리하지 못했습니다.");
@@ -766,7 +798,7 @@ export default function AdminPage() {
                     <div className="grid gap-2 md:grid-cols-[1fr_180px_180px_auto]">
                       <div className="relative min-w-0">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input className="pl-9" placeholder="검색" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { setPage(1); void loadItems(); } }} />
+                        <Input className="pl-9" placeholder="검색" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { setPage(1); void loadItems({ page: 1 }); } }} />
                       </div>
                       {canFilterByScope && (
                         <Select value={scopeFilter} onChange={(event) => { setPage(1); setScopeFilter(event.target.value); }}>
@@ -780,7 +812,7 @@ export default function AdminPage() {
                           {visibleLocations.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                         </Select>
                       )}
-                      <Button variant="secondary" onClick={() => { setPage(1); void loadItems(); }}>검색</Button>
+                      <Button variant="secondary" onClick={() => { setPage(1); void loadItems({ page: 1 }); }}>검색</Button>
                     </div>
                   </div>
                 </CardHeader>

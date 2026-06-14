@@ -132,7 +132,8 @@ export async function POST(req: Request, context: { params: Promise<{ collection
     const document = cleanDocument(await req.json());
     assertClassroomSectionLocked(config.key, document);
     const result = await collection.insertOne(document);
-    return ok({ insertedId: result.insertedId.toHexString() }, { status: 201 });
+    const created = await collection.findOne(idFilter(result.insertedId.toHexString()));
+    return ok({ insertedId: result.insertedId.toHexString(), document: serialize(created) }, { status: 201 });
   } catch (error) {
     return fail(error, "Failed to create admin document");
   }
@@ -151,7 +152,8 @@ export async function PATCH(req: Request, context: { params: Promise<{ collectio
     assertClassroomSectionLocked(config.key, document);
     const result = await collection.updateOne(idFilter(id), { $set: document });
     if (result.matchedCount === 0) throw new HttpError(404, "Document not found", "DOCUMENT_NOT_FOUND");
-    return ok({ matchedCount: result.matchedCount, modifiedCount: result.modifiedCount });
+    const updated = await collection.findOne(idFilter(id));
+    return ok({ matchedCount: result.matchedCount, modifiedCount: result.modifiedCount, document: serialize(updated) });
   } catch (error) {
     return fail(error, "Failed to update admin document");
   }
