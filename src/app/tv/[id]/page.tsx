@@ -165,6 +165,12 @@ export default function TvBoardPage() {
       if (!confirm.isConfirmed) return;
     }
 
+    if (isVisible) {
+      const nextPendingUpdates = pendingUpdatesRef.current.filter((update) => update.location !== section.key);
+      pendingUpdatesRef.current = nextPendingUpdates;
+      setPendingUpdates(nextPendingUpdates);
+    }
+
     const nextVisible = isVisible ? visibleSections.filter((key) => key !== section.key) : [...visibleSections, section.key];
     await fetch(`/api/visible-sections?classCode=${id}`, {
       method: "PATCH",
