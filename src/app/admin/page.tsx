@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RESERVATION_DAYS, formatReservationDate } from "@/lib/constants/reservations";
 import { cn } from "@/lib/utils/cn";
+import { formatKstDateTime } from "@/lib/utils/time";
 
 type AdminDocument = Record<string, unknown> & { _id?: string };
 type ClassOption = { _id?: string; year: string; grade: string; classNum: string; password?: string; disabled?: boolean };
@@ -283,6 +284,19 @@ export default function AdminPage() {
     setMode("form");
   }
 
+  function changeCollection(nextKey: string) {
+    if (nextKey === collectionKey) return;
+
+    const nextCollection = ADMIN_COLLECTIONS.find((item) => item.key === nextKey) ?? ADMIN_COLLECTIONS[0];
+    setCollectionKey(nextCollection.key);
+    setPage(1);
+    setSelectedId(null);
+    setScopeFilter("");
+    setLocationFilter("");
+    setDraft(prettyJson(nextCollection.template));
+    setMode("form");
+  }
+
   async function saveDocument() {
     if (collection.readOnly) {
       setMessage("로그 컬렉션은 수정할 수 없습니다.");
@@ -409,6 +423,9 @@ export default function AdminPage() {
 
   function renderCellValue(item: AdminDocument, field: string) {
     const value = item[field];
+    if ((collection.key === "access_log" || collection.key === "logs") && field === "timestamp") {
+      return <span className="whitespace-nowrap">{formatKstDateTime(value)}</span>;
+    }
     if (field === "location" || field === "place") {
       return <span>{labelForSection(item, stringifyValue(value))}</span>;
     }
@@ -766,11 +783,11 @@ export default function AdminPage() {
             {navCollections.map((item) => {
               const NavIcon = iconMap[item.icon as keyof typeof iconMap] ?? Database;
               return (
-                <button
-                  key={item.key}
-                  onClick={() => setCollectionKey(item.key)}
-                  className={cn("flex min-w-max items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent lg:min-w-0", collectionKey === item.key ? "bg-accent text-accent-foreground" : "text-muted-foreground")}
-                >
+	                <button
+	                  key={item.key}
+	                  onClick={() => changeCollection(item.key)}
+	                  className={cn("flex min-w-max items-center gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent lg:min-w-0", collectionKey === item.key ? "bg-accent text-accent-foreground" : "text-muted-foreground")}
+	                >
                   <NavIcon className="h-4 w-4" />
                   <span className="truncate">{item.label}</span>
                 </button>
