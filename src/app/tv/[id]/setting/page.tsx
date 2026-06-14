@@ -185,6 +185,8 @@ export default function TvSettingPage() {
             <CardContent className="max-h-[72vh] space-y-2 overflow-auto p-3">
               {sections.map((section, index) => {
                 const isClassroom = section.key === "classroom";
+                const isAboveClassroom = sections[index - 1]?.key === "classroom";
+                const isBelowClassroom = sections[index + 1]?.key === "classroom";
 
                 return (
                   <div key={section.key} className="flex items-center justify-between gap-3 rounded-md border bg-white/[0.025] p-3 transition-colors hover:bg-white/[0.04]">
@@ -202,8 +204,8 @@ export default function TvSettingPage() {
                       </div>
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <Button variant="ghost" size="icon" disabled={index === 0} onClick={() => moveSection(index, "up")}><ArrowUp className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" disabled={index === sections.length - 1} onClick={() => moveSection(index, "down")}><ArrowDown className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" disabled={isClassroom || isAboveClassroom || index === 0} onClick={() => moveSection(index, "up")}><ArrowUp className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" disabled={isClassroom || isBelowClassroom || index === sections.length - 1} onClick={() => moveSection(index, "down")}><ArrowDown className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" disabled={isClassroom} onClick={() => deleteSection(section)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                   </div>

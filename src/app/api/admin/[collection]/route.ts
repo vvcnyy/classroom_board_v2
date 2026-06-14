@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { fail, HttpError, ok } from "@/lib/api/http";
 import { getAdminCollection } from "@/lib/admin/collections";
+import { CLASSROOM_SECTION } from "@/lib/constants/sections";
 import { getDb } from "@/lib/db/mongodb";
 
 const DEFAULT_LIMIT = 50;
@@ -65,6 +66,33 @@ function assertWritable(readOnly?: boolean) {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function assertClassroomSectionLocked(collectionKey: string, document: Record<string, unknown>) {
+  if (collectionKey !== "sections" || !("sections" in document)) return;
+  if (!Array.isArray(document.sections)) {
+    throw new HttpError(400, "Sections must be an array", "INVALID_SECTIONS");
+  }
+
+  const classroomSections = document.sections.filter(
+    (section) => isRecord(section) && section.key === CLASSROOM_SECTION.key
+  );
+  if (classroomSections.length !== 1) {
+    throw new HttpError(400, "교실은 기본 장소라 삭제하거나 중복 추가할 수 없습니다.", "CLASSROOM_SECTION_LOCKED");
+  }
+
+  const [classroom] = classroomSections;
+  if (
+    classroom.label !== CLASSROOM_SECTION.label ||
+    classroom.isETC !== CLASSROOM_SECTION.isETC ||
+    classroom.isAbsent !== CLASSROOM_SECTION.isAbsent
+  ) {
+    throw new HttpError(400, "교실은 기본 장소라 수정할 수 없습니다.", "CLASSROOM_SECTION_LOCKED");
+  }
+}
+
 export async function GET(req: Request, context: { params: Promise<{ collection: string }> }) {
   try {
     const { collection: key } = await context.params;
@@ -102,6 +130,7 @@ export async function POST(req: Request, context: { params: Promise<{ collection
     const { config, collection } = await resolveCollection(key);
     assertWritable(config.readOnly);
     const document = cleanDocument(await req.json());
+    assertClassroomSectionLocked(config.key, document);
     const result = await collection.insertOne(document);
     return ok({ insertedId: result.insertedId.toHexString() }, { status: 201 });
   } catch (error) {
@@ -119,6 +148,7 @@ export async function PATCH(req: Request, context: { params: Promise<{ collectio
     if (!id) throw new HttpError(400, "Document id is required", "MISSING_ID");
 
     const document = cleanDocument(body.document ?? body);
+    assertClassroomSectionLocked(config.key, document);
     const result = await collection.updateOne(idFilter(id), { $set: document });
     if (result.matchedCount === 0) throw new HttpError(404, "Document not found", "DOCUMENT_NOT_FOUND");
     return ok({ matchedCount: result.matchedCount, modifiedCount: result.modifiedCount });

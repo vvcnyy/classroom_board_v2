@@ -50,6 +50,7 @@ interface AdminResponse {
 const iconMap = { Activity, BookOpen, CalendarDays, ClipboardList, Eye, LayoutList, School, Users };
 const readMostly = new Set(["access_log", "logs"]);
 const navCollections = ADMIN_COLLECTIONS.filter((item) => item.visibleInNav !== false);
+const classroomSection: SectionItem = { key: "classroom", label: "교실", isETC: false, isAbsent: false };
 
 function stringifyValue(value: unknown) {
   if (value === null || value === undefined) return "";
@@ -453,25 +454,28 @@ export default function AdminPage() {
             </Button>
           </div>
           <div className="space-y-2">
-            {classSectionsDraft.map((section, index) => (
+            {classSectionsDraft.map((section, index) => {
+              const isClassroom = section.key === classroomSection.key;
+              return (
               <div key={`${section.key}-${index}`} className="rounded-md border p-3">
                 <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-                  <Input placeholder="key" value={section.key} onChange={(e) => updateSection(index, { key: e.target.value })} />
-                  <Input placeholder="라벨" value={section.label} onChange={(e) => updateSection(index, { label: e.target.value })} />
+                  <Input placeholder="key" value={section.key} disabled={isClassroom} onChange={(e) => updateSection(index, { key: e.target.value })} />
+                  <Input placeholder="라벨" value={section.label} disabled={isClassroom} onChange={(e) => updateSection(index, { label: e.target.value })} />
                   <Button variant="ghost" size="icon" onClick={() => {
                     setClassSectionsDraft((current) => current.filter((_, itemIndex) => itemIndex !== index));
                     setClassVisibleDraft((current) => current.filter((key) => key !== section.key));
-                  }}>
+                  }} disabled={isClassroom}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
-                  <label className="flex items-center gap-2"><Checkbox checked={section.isETC} onChange={(e) => updateSection(index, { isETC: e.currentTarget.checked })} /> 세부 입력</label>
-                  <label className="flex items-center gap-2"><Checkbox checked={section.isAbsent} onChange={(e) => updateSection(index, { isAbsent: e.currentTarget.checked })} /> 부재 처리</label>
+                  <label className="flex items-center gap-2"><Checkbox checked={section.isETC} disabled={isClassroom} onChange={(e) => updateSection(index, { isETC: e.currentTarget.checked })} /> 세부 입력</label>
+                  <label className="flex items-center gap-2"><Checkbox checked={section.isAbsent} disabled={isClassroom} onChange={(e) => updateSection(index, { isAbsent: e.currentTarget.checked })} /> 부재 처리</label>
                   <label className="flex items-center gap-2"><Checkbox checked={classVisibleDraft.includes(section.key)} onChange={() => toggleVisible(section.key)} /> 전자칠판 표시</label>
                 </div>
               </div>
-            ))}
+              );
+            })}
             {classSectionsDraft.length === 0 && <p className="rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground">등록된 섹션이 없습니다.</p>}
           </div>
         </div>
@@ -585,21 +589,24 @@ export default function AdminPage() {
             </Button>
           </div>
           <div className="space-y-2">
-            {sections.map((section, index) => (
+            {sections.map((section, index) => {
+              const isClassroom = section.key === classroomSection.key;
+              return (
               <div key={`${section.key}-${index}`} className="rounded-md border p-3">
                 <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-                  <Input placeholder="key" value={section.key} onChange={(e) => updateSection(index, { key: e.target.value })} />
-                  <Input placeholder="label" value={section.label} onChange={(e) => updateSection(index, { label: e.target.value })} />
-                  <Button variant="ghost" size="icon" onClick={() => updateDraft({ ...parsedDraft, sections: sections.filter((_, itemIndex) => itemIndex !== index) })}>
+                  <Input placeholder="key" value={section.key} disabled={isClassroom} onChange={(e) => updateSection(index, { key: e.target.value })} />
+                  <Input placeholder="label" value={section.label} disabled={isClassroom} onChange={(e) => updateSection(index, { label: e.target.value })} />
+                  <Button variant="ghost" size="icon" disabled={isClassroom} onClick={() => updateDraft({ ...parsedDraft, sections: sections.filter((_, itemIndex) => itemIndex !== index) })}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="mt-3 flex gap-4 text-sm text-muted-foreground">
-                  <label className="flex items-center gap-2"><Checkbox checked={section.isETC} onChange={(e) => updateSection(index, { isETC: e.currentTarget.checked })} /> 세부 입력</label>
-                  <label className="flex items-center gap-2"><Checkbox checked={section.isAbsent} onChange={(e) => updateSection(index, { isAbsent: e.currentTarget.checked })} /> 부재 처리</label>
+                  <label className="flex items-center gap-2"><Checkbox checked={section.isETC} disabled={isClassroom} onChange={(e) => updateSection(index, { isETC: e.currentTarget.checked })} /> 세부 입력</label>
+                  <label className="flex items-center gap-2"><Checkbox checked={section.isAbsent} disabled={isClassroom} onChange={(e) => updateSection(index, { isAbsent: e.currentTarget.checked })} /> 부재 처리</label>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
