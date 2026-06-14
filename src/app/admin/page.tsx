@@ -157,6 +157,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [relatedSaving, setRelatedSaving] = useState(false);
+  const [reloadingBoards, setReloadingBoards] = useState(false);
   const [message, setMessage] = useState("");
   const [relatedMessage, setRelatedMessage] = useState("");
 
@@ -334,6 +335,21 @@ export default function AdminPage() {
       setMessage(error instanceof Error ? error.message : "요청을 처리하지 못했습니다.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function reloadAllBoards() {
+    setReloadingBoards(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/reload", { method: "POST", credentials: "include" });
+      const data = (await response.json()) as { message?: string };
+      if (!response.ok) throw new Error(data.message ?? "새로고침 신호를 보내지 못했습니다.");
+      setMessage("전체 전자칠판에 새로고침 신호를 보냈습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "요청을 처리하지 못했습니다.");
+    } finally {
+      setReloadingBoards(false);
     }
   }
 
@@ -776,6 +792,9 @@ export default function AdminPage() {
               <Badge className="bg-secondary text-secondary-foreground">{collection.collection}</Badge>
               <Button variant="outline" size="sm" onClick={() => loadItems()} disabled={loading}>
                 <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /> 새로고침
+              </Button>
+              <Button variant="secondary" size="sm" onClick={reloadAllBoards} disabled={reloadingBoards}>
+                <RefreshCw className={cn("h-4 w-4", reloadingBoards && "animate-spin")} /> 전체 새로고침
               </Button>
             </div>
           </header>

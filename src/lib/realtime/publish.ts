@@ -16,3 +16,10 @@ export function publishClassChanged(scope: ClassScope, reason: string) {
     at: Date.now(),
   });
 }
+
+export function publishAllBoardsReload(reason: string) {
+  globalThis.__classroomIo?.emit("force-reload", {
+    reason,
+    at: Date.now(),
+  });
+}

@@ -84,8 +84,11 @@ export default function TvBoardPage() {
   const revalidateTv = useCallback(() => {
     mutate();
   }, [mutate]);
+  const forceReloadTv = useCallback(() => {
+    window.location.reload();
+  }, []);
 
-  useClassRealtime(classInfo, revalidateTv);
+  useClassRealtime(classInfo, revalidateTv, forceReloadTv);
 
   useEffect(() => {
     if (!attendanceData?.student) {

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { io } from "socket.io-client";
 import type { ClassScope } from "@/types/domain";
 
-export function useClassRealtime(scope: ClassScope | null, onChanged: () => void) {
+export function useClassRealtime(scope: ClassScope | null, onChanged: () => void, onForceReload?: () => void) {
   const year = scope?.year;
   const grade = scope?.grade;
   const classNum = scope?.classNum;
@@ -24,10 +24,17 @@ export function useClassRealtime(scope: ClassScope | null, onChanged: () => void
     });
 
     socket.on("class-changed", onChanged);
+    socket.on("force-reload", () => {
+      if (onForceReload) {
+        onForceReload();
+        return;
+      }
+      window.location.reload();
+    });
 
     return () => {
       socket.emit("leave-class", roomScope);
       socket.disconnect();
     };
-  }, [year, grade, classNum, onChanged]);
+  }, [year, grade, classNum, onChanged, onForceReload]);
 }
