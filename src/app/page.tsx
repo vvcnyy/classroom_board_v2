@@ -84,7 +84,7 @@ function StudentApp() {
       await Swal.fire({
         icon: "error",
         title: "오류",
-        html: '일치하는 학생 정보가 없습니다.<br/><br/><a href="/privacy" style="color:#3b82f6;text-decoration:underline;">개인정보 동의서 작성하기</a>',
+        html: "일치하는 학생 정보가 없습니다.<br/><br/>전자칠판 화면의 개인정보 동의 QR코드를 스캔해서 등록해주세요.",
       });
       return;
     }

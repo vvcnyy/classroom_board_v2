@@ -1,5 +1,6 @@
 import { HttpError } from "@/lib/api/http";
 import { CLASSROOM_SECTION } from "@/lib/constants/sections";
+import { findActiveClassByScope } from "@/lib/repositories/classes";
 import { logLocationUpdate } from "@/lib/repositories/logs";
 import { getSections } from "@/lib/repositories/sections";
 import {
@@ -11,6 +12,7 @@ import {
   updateStudentNameIfBlank,
 } from "@/lib/repositories/students";
 import { getVisibleSections, setVisibleSections } from "@/lib/repositories/visible-sections";
+import { verifyPrivacyRegistrationToken } from "@/lib/services/privacy-token";
 import type { ClassScope } from "@/types/domain";
 
 export async function createClassStudent(scope: ClassScope, id: string, name = "") {
@@ -81,15 +83,17 @@ export async function registerPrivacyConsent(input: {
   classNum?: string;
   number?: string | number;
   name?: string;
+  token?: string;
 }) {
   const year = String(input.year ?? "").trim();
   const grade = String(input.grade ?? "").trim();
   const classNum = String(input.classNum ?? "").trim();
   const name = String(input.name ?? "").trim();
+  const token = String(input.token ?? "").trim();
   const number = Number(input.number);
 
-  if (!year || !grade || !classNum || !String(input.number ?? "").trim() || !name) {
-    throw new HttpError(400, "학년도, 학년, 반, 번호, 이름을 모두 입력해주세요.", "MISSING_FIELDS");
+  if (!year || !grade || !classNum || !String(input.number ?? "").trim() || !name || !token) {
+    throw new HttpError(400, "QR코드를 스캔한 뒤 모든 항목을 입력해주세요.", "MISSING_FIELDS");
   }
 
   if (!Number.isInteger(number) || number < 1 || number > 99) {
@@ -97,6 +101,11 @@ export async function registerPrivacyConsent(input: {
   }
 
   const scope = { year, grade, classNum };
+  const classDoc = await findActiveClassByScope(year, grade, classNum);
+  if (!classDoc || !verifyPrivacyRegistrationToken(scope, classDoc.password, token)) {
+    throw new HttpError(403, "TV 화면의 QR코드와 학급 정보가 일치하지 않습니다.", "INVALID_REGISTRATION_TOKEN");
+  }
+
   const studentId = `${grade}${classNum}${String(number).padStart(2, "0")}`;
   const result = await updateStudentNameIfBlank(scope, studentId, name);
 

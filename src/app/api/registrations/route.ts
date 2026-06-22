@@ -11,6 +11,7 @@ export async function POST(req: Request) {
       classNum: body.classNum ?? body.class,
       number: body.number,
       name: body.name,
+      token: body.token,
     });
 
     if (result.status === "registered") {

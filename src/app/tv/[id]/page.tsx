@@ -7,6 +7,7 @@ import utc from "dayjs/plugin/utc";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import QRCode from "qrcode";
 import useSWR from "swr";
 import Swal from "sweetalert2";
 import { CurrentSchedule } from "@/components/tv/CurrentSchedule";
@@ -28,6 +29,7 @@ interface TvData {
   visibleSections: string[];
   attendanceData: AttendanceCheck | null;
   sectionsData: LocationSection[];
+  privacyRegistrationToken?: string;
 }
 
 export default function TvBoardPage() {
@@ -37,6 +39,7 @@ export default function TvBoardPage() {
   const [notCheckedStudents, setNotCheckedStudents] = useState<string[]>([]);
   const [pendingUpdates, setPendingUpdates] = useState<PendingLocationUpdate[]>([]);
   const [displayStudents, setDisplayStudents] = useState<StudentDisplayName[]>([]);
+  const [privacyQrSvg, setPrivacyQrSvg] = useState("");
   const pendingUpdatesRef = useRef<PendingLocationUpdate[]>([]);
 
   useEffect(() => {
@@ -89,6 +92,24 @@ export default function TvBoardPage() {
   }, []);
 
   useClassRealtime(classInfo, revalidateTv, forceReloadTv);
+
+  useEffect(() => {
+    if (!data.privacyRegistrationToken) {
+      setPrivacyQrSvg("");
+      return;
+    }
+
+    QRCode.toString(`${location.origin}/privacy?t=${data.privacyRegistrationToken}`, {
+      type: "svg",
+      errorCorrectionLevel: "L",
+      margin: 1,
+      width: 80,
+      color: {
+        dark: "#111111",
+        light: "#ffffff",
+      },
+    }).then(setPrivacyQrSvg).catch(() => setPrivacyQrSvg(""));
+  }, [data.privacyRegistrationToken]);
 
   useEffect(() => {
     if (!attendanceData?.student) {
@@ -232,7 +253,7 @@ export default function TvBoardPage() {
         </div>
         <div className="flex h-4/5 w-full">
           <div className="flex h-full w-1/5 flex-col">
-            <div className="flex h-4/5 w-full flex-col items-center justify-center border border-white/[0.14] p-[1.2vw]">
+            <div className="flex h-3/4 w-full flex-col items-center justify-center border border-white/[0.14] p-[1.2vw]">
               <h1 className="mb-[2vw] text-center text-[2vw] font-bold">
                 {grade}학년 {classNum}반
                 <br />
@@ -253,8 +274,15 @@ export default function TvBoardPage() {
                 </div>
               </div>
             </div>
-            <div className="flex h-1/5 w-full items-center justify-center gap-[2vw] border border-white/[0.14] p-[1.2vw]">
-              <Image src={logo} alt="Dimigo Logo" />
+            <div className="flex h-1/4 w-full flex-col items-center justify-center gap-[0.35vw] border border-white/[0.14] p-[0.55vw]">
+              <Image src={logo} alt="Dimigo Logo" className="h-[3.2vw] w-auto object-contain" />
+              {privacyQrSvg && (
+                <div
+                  className="h-[4.5vw] w-[4.5vw] shrink-0 overflow-hidden rounded-[0.16vw] bg-white p-[0.14vw] [&_svg]:block [&_svg]:h-full [&_svg]:w-full"
+                  aria-label="개인정보 동의서 QR코드"
+                  dangerouslySetInnerHTML={{ __html: privacyQrSvg }}
+                />
+              )}
             </div>
           </div>
           <div className="flex h-full w-4/5">
