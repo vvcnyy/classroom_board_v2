@@ -20,6 +20,7 @@ export interface Student {
   location: string;
   etcContent?: string;
   updatedAt?: Date;
+  privacyConsentAt?: Date;
 }
 
 export interface StudentDisplayName {

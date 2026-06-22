@@ -8,6 +8,7 @@ import {
   findStudents,
   resetStudentLocations,
   updateStudentLocation,
+  updateStudentNameIfBlank,
 } from "@/lib/repositories/students";
 import { getVisibleSections, setVisibleSections } from "@/lib/repositories/visible-sections";
 import type { ClassScope } from "@/types/domain";
@@ -72,6 +73,38 @@ export async function deleteClassStudent(scope: ClassScope, id: string) {
 export async function resetClassStudents(scope: ClassScope) {
   const result = await resetStudentLocations(scope);
   return { ok: true, modifiedCount: result.modifiedCount };
+}
+
+export async function registerPrivacyConsent(input: {
+  year?: string;
+  grade?: string;
+  classNum?: string;
+  number?: string | number;
+  name?: string;
+}) {
+  const year = String(input.year ?? "").trim();
+  const grade = String(input.grade ?? "").trim();
+  const classNum = String(input.classNum ?? "").trim();
+  const name = String(input.name ?? "").trim();
+  const number = Number(input.number);
+
+  if (!year || !grade || !classNum || !String(input.number ?? "").trim() || !name) {
+    throw new HttpError(400, "학년도, 학년, 반, 번호, 이름을 모두 입력해주세요.", "MISSING_FIELDS");
+  }
+
+  if (!Number.isInteger(number) || number < 1 || number > 99) {
+    throw new HttpError(400, "번호는 1부터 99 사이여야 합니다.", "INVALID_STUDENT_NUMBER");
+  }
+
+  const scope = { year, grade, classNum };
+  const studentId = `${grade}${classNum}${String(number).padStart(2, "0")}`;
+  const result = await updateStudentNameIfBlank(scope, studentId, name);
+
+  if (result.status === "not_found") {
+    throw new HttpError(404, "학생 정보를 찾을 수 없습니다.", "STUDENT_NOT_FOUND");
+  }
+
+  return { status: result.status, year, grade, classNum, number };
 }
 
 export async function getStudentAppData(input: { id: string; year: string; grade: string; classNum: string }) {

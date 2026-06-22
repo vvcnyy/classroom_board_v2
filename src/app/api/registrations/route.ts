@@ -1,13 +1,31 @@
-import { getDb } from "@/lib/db/mongodb";
+import { fail, ok } from "@/lib/api/http";
+import { publishClassChanged } from "@/lib/realtime/publish";
+import { registerPrivacyConsent } from "@/lib/services/students";
 
 export async function POST(req: Request) {
-  const authHeader = req.headers.get("Authorization");
-  if (authHeader !== `Bearer ${process.env.REGISTRATION_SECRET ?? "fyyBad2llXsMLQC"}`) {
-    return Response.json({ message: "Not Allowed" }, { status: 403 });
-  }
+  try {
+    const body = await req.json();
+    const result = await registerPrivacyConsent({
+      year: body.year,
+      grade: body.grade,
+      classNum: body.classNum ?? body.class,
+      number: body.number,
+      name: body.name,
+    });
 
-  const { number, name } = await req.json();
-  const db = await getDb();
-  await db.collection("students").updateOne({ id: number }, { $set: { name } }, { upsert: true });
-  return Response.json({ message: "데이터 처리 완료" });
+    if (result.status === "registered") {
+      publishClassChanged(result, "student-privacy-registered");
+    }
+
+    return ok({
+      status: result.status,
+      message: result.status === "registered" ? "등록되었습니다." : "이미 등록되어 있습니다.",
+      year: result.year,
+      grade: result.grade,
+      classNum: result.classNum,
+      number: result.number,
+    });
+  } catch (error) {
+    return fail(error, "Failed to register privacy consent");
+  }
 }

@@ -62,6 +62,41 @@ export async function updateStudentLocation(scope: ClassScope, id: string, locat
   );
 }
 
+export async function updateStudentNameIfBlank(scope: ClassScope, id: string, name: string) {
+  const db = await getDb();
+  const student = await db.collection<Student>("students").findOne(
+    {
+      id,
+      year: scope.year,
+      grade: scope.grade,
+      class: scope.classNum,
+    },
+    { projection: { _id: 1, name: 1 } }
+  );
+
+  if (!student) return { status: "not_found" as const };
+  if (student.name?.trim()) return { status: "already_registered" as const };
+
+  const result = await db.collection<Student>("students").updateOne(
+    {
+      id,
+      year: scope.year,
+      grade: scope.grade,
+      class: scope.classNum,
+      $or: [{ name: { $exists: false } }, { name: { $regex: "^\\s*$" } }],
+    },
+    {
+      $set: {
+        name,
+        privacyConsentAt: new Date(),
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  return { status: result.modifiedCount > 0 ? ("registered" as const) : ("already_registered" as const) };
+}
+
 export async function bulkUpdateStudentLocations(scope: ClassScope, updates: PendingLocationUpdate[]) {
   if (updates.length === 0) return;
 
