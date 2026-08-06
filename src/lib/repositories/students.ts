@@ -12,7 +12,7 @@ export interface StudentFilters {
 function buildStudentQuery(filters: StudentFilters) {
   const query: Record<string, unknown> = {};
   if (filters.id) query.id = filters.id;
-  if (filters.name) query.name = { $regex: filters.name, $options: "i" };
+  if (filters.name) query.name = filters.name;
   if (filters.year) query.year = filters.year;
   if (filters.grade) query.grade = filters.grade;
   if (filters.classNum) query.class = filters.classNum;

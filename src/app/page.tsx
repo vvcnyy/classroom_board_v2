@@ -78,7 +78,11 @@ function StudentApp() {
       return;
     }
 
-    const response = await fetch(`/api/students?studentId=${numberQuery}&name=${nameQuery}`);
+    const params = new URLSearchParams({
+      studentId: numberQuery.trim(),
+      name: nameQuery.trim(),
+    });
+    const response = await fetch(`/api/students?${params}`);
     const data = (await response.json()) as Student[];
     if (!response.ok || data.length === 0) {
       await Swal.fire({

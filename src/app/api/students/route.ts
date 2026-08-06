@@ -10,8 +10,8 @@ import { createClassStudent, deleteClassStudent } from "@/lib/services/students"
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = getStudentId(searchParams);
-    const name = searchParams.get("name");
+    const id = getStudentId(searchParams)?.trim() || null;
+    const name = searchParams.get("name")?.trim() || null;
 
     let year = searchParams.get("year");
     let grade = searchParams.get("grade");
